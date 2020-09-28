@@ -60,6 +60,9 @@ classifier.fit(train_text, train_df.target)
 print("Test accuracy: {}".format(classifier.score(test_text, test_df.target)))
 print("Eval accuracy: {}".format(classifier.score(eval_text, eval_df.target)))
 
-plot_confusion_matrix(classifier, eval_text, eval_df.target, normalize="true")
+# plot_confusion_matrix(classifier, eval_text, eval_df.target, normalize="true")
+# plot_roc_curve(classifier, eval_text, eval_df.target)
+
+plot_confusion_matrix(classifier, test_text, test_df.target, normalize="true")
 plot_roc_curve(classifier, test_text, test_df.target)
 plt.show()
