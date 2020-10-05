@@ -3,11 +3,12 @@ import json
 import csv
 
 
+
 def classification(stars: int):
     if stars < 3:
         return 0 #negative
     elif stars > 3: 
-        return 2: #positive
+        return 2 #positive
     else:
         return 1 #neutral
 
@@ -30,7 +31,8 @@ data = []
 with open(filename, 'r') as f:
     for i, line in enumerate(f):
         rowData = json.loads(line)
-        data.append({key :rowData[key] for key in good_columns} )
+        rowDict = {"text": rowData["text"], "Sentiment": classification(rowData['stars'])}
+        data.append(rowDict )
         if( i % 100000 == 0):
             print(i)
     
