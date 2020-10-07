@@ -52,7 +52,7 @@ print("training vectorizer")
 vectorizer = TfidfVectorizer(max_features=10000)
 train_text = vectorizer.fit_transform(train_df["text"].values)
 
-print(type(train_text[1]))
+print(train_text.shape)
 classifier = LinearSVC()
 classifier.fit(train_text, train_df["Sentiment"])
 
