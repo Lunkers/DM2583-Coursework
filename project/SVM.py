@@ -1,7 +1,7 @@
 # import pandas requirements
 import pandas as pd
 from pandas import DataFrame
-from sklearn.svm import SVC  # use multinomial naive bayes
+from sklearn.svm import LinearSVC  # use multinomial naive bayes
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import plot_confusion_matrix, plot_roc_curve
 import matplotlib.pyplot as plt
@@ -38,6 +38,7 @@ type_dict = {"text": "string", "Sentiment": int}
 # read training data
 train_df = pd.read_csv("reviews_train.csv", header=None, skiprows=[0],
                        names=["text", "Sentiment"], dtype=type_dict)
+train_df.dropna(inplace=True)
 
 print(train_df.dtypes)
 # remove header
@@ -48,11 +49,11 @@ print(train_df.dtypes)
 
 
 print("training vectorizer")
-vectorizer = TfidfVectorizer()
-train_text = vectorizer.fit_transform(train_df["text"].astype(str))
+vectorizer = TfidfVectorizer(max_features=10000)
+train_text = vectorizer.fit_transform(train_df["text"].values)
 
 print(type(train_text[1]))
-classifier = SVC()
+classifier = LinearSVC()
 classifier.fit(train_text, train_df["Sentiment"])
 
 test_df = pd.read_csv("reviews_test.csv", header=None, skiprows=[0],
@@ -60,15 +61,20 @@ test_df = pd.read_csv("reviews_test.csv", header=None, skiprows=[0],
 
 # test_data = clean_data(test_df.data)
 print(test_df.head())
+test_df.dropna(inplace=True)
 
 # eval data
 eval_df = pd.read_csv("reviews_eval.csv", header=None, skiprows=[0],
                       names=["text", "Sentiment"], dtype=type_dict)
 # eval_df.data = clean_data(eval_df.data)
 print(eval_df.head())
+eval_df.dropna(inplace=True)
 
-test_text = vectorizer.transform(test_df["text"].astype(str))
-eval_text = vectorizer.transform(eval_df["text"].astype(str))
+print("transforming test")
+test_text = vectorizer.transform(test_df["text"].values)
+
+print("transforming eval")
+eval_text = vectorizer.transform(eval_df["text"].values)
 print("scoring test")
 print(classifier.score(test_text, test_df["Sentiment"]))
 print("scoring eval")
