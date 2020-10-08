@@ -123,8 +123,8 @@ for i in range(NUM_EPOCHS):
                     model_save_path = model_save_prefix + \
                         f"tf-idf_val_loss{dev_loss.item()}"
                     torch.save(model, model_save_path)
-                    for f in glob.glob(snapshot_prefix + '*'):
-                        if f != snapshot_path:
+                    for f in glob.glob(model_save_prefix + '*'):
+                        if f != model_save_path:
                             os.remove(f)
 
     
