@@ -4,6 +4,7 @@ from pandas import DataFrame
 from sklearn.naive_bayes import MultinomialNB  # use multinomial naive bayes
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import plot_confusion_matrix, plot_roc_curve
+from nltk.corpus import stopwords
 import matplotlib.pyplot as plt
 import re
 
@@ -49,7 +50,7 @@ print(train_df.dtypes)
 
 
 print("training vectorizer")
-vectorizer = TfidfVectorizer(max_features=10000)
+vectorizer = TfidfVectorizer(max_features=2500, norm='l2', stop_words=stopwords.words('english'))
 train_text = vectorizer.fit_transform(train_df["text"].values)
 
 classifier = MultinomialNB()
