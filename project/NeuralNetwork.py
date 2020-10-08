@@ -81,6 +81,7 @@ def train():
 
 
     model = SentimentLSTM(sample_x.size()[1], 3, EMBEDDING_DIM, HIDDEN_DIM, False)
+    model.to(device)
 
     loss_function = nn.NLLLoss()  # negative log likelihood loss, standard for RNNs
     # Adam optimizer, better convergence than standard SGD
@@ -97,6 +98,8 @@ def train():
         # train for one epoch
         model = model.train()
         for review, sentiment in train_loader:
+            review = review.to(device)
+            sentiment = sentiment.to(device)
             model.zero_grad()  # reset gradient after each batch
 
             # add sequence lenght of 1 for lstm
@@ -115,9 +118,10 @@ def train():
                 with torch.no_grad():  # we don't need to calcualte gradients on validation, so we save some memory here
                     dev_loss = 0
                     dev_n_correct = 0
-                    for review, sentiment in val_loader:
-                        result = model(review.to_dense().unsqueeze(1))
-                        dev_loss = loss_function(result, sentiment)
+                    for val_review, val_sentiment in val_loader:
+                        val_review, val_sentiment = val_review.to(device), val_sentiment.to(device)
+                        result = model(val_review.to_dense().unsqueeze(1))
+                        dev_loss = loss_function(result, val_sentiment)
                     validation_losses.append(dev_loss)
                     if dev_loss < best_val_loss:
                         best_val_loss = dev_loss
@@ -162,12 +166,14 @@ def test(model_filename):
     model_load_path = os.path.join(os.getcwd, "saved_models", "tf-idf", model_filename)
     model = SentimentLSTM(sample_x.size()[1], 3, EMBEDDING_DIM, HIDDEN_DIM, use_embedding=False) #TODO: instantiate correctly.
     model.load_state_dict(torch.load(model_load_path))
+    model.to(device)
     model.eval()
 
     correct = 0
     total = 0
     with torch.no_grad():
         for reviews, sentiments in testloader:
+            reviews, sentiments = reviews.to(device), sentiments.to(device)
             result = model(reviews.unsquueze(1))
             _, predicted = torch.max(result.squueze().data, 1)
             total += sentiments.size
@@ -176,6 +182,7 @@ def test(model_filename):
     return accuracy
 
 if __name__ == "__main__":
+    global device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model_file_name = train()
     accuracy = test(model_file_name)
     print(f"final test accuracy: {accuracy}")

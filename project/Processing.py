@@ -5,27 +5,24 @@ import json
 import csv
 import re
 import string
+import nltk
+from nltk.tokenize import word_tokenize
 
+nltk.download('punkt')
 
 def clean_text(text: str):
     # remove links
-    text = re.sub('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|'
-                  '(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
-    # remove punctuation
-    punct = string.punctuation
-    # replace punctuation with space
-    trans_table = str.maketrans(punct, len(punct)*' ')
-    text = text.translate(trans_table)
+    text = re.sub('[^a-zA-Z]', ' ', text)
+    text = text.lower()
+    #split into words
+    text = word_tokenize(text) #removes extra spaces as well
+    text = " ".join(text)
+
 
     # transform to lowercase
-    text = text.lower()
-
-    # replace newlines and tabs with spaces
-    text = text.replace("\n", " ")
-    text = text.replace("\t", " ")
+    
     # remove non-ascii characters
     text = text.encode('ascii', 'ignore').decode()
-
     return text
 
 
@@ -58,13 +55,17 @@ data = []
 stars =[]
 with open(filename, 'r') as f:
     for i, line in enumerate(f):
-        rowData = json.loads(line)
-        rowDict = {"text": clean_text(
-            rowData["text"]), "Sentiment": classification(rowData['stars'])}
-        data.append(rowDict)
-        stars.append(rowData["stars"])
-        if(i % 100000 == 0):
-            print(i)
+        if i < 3000000: #we only need first 3 million or so data points
+            rowData = json.loads(line)
+            rowDict = {"text": clean_text(
+                rowData["text"]), "Sentiment": classification(rowData['stars'])}
+            data.append(rowDict)
+            stars.append(rowData["stars"])
+            if(i % 10000 == 0):
+                print(i)
+        else:
+            print("sould exit loop")
+            break
 
 
 
@@ -72,20 +73,20 @@ print("creating training csv....")
 with open('reviews_train.csv', 'w', newline='') as output_file:
     dict_writer = csv.DictWriter(output_file, data[0].keys())
     dict_writer.writeheader()
-    dict_writer.writerows(data[0:2000000])
+    dict_writer.writerows(data[0:1000000])
 
 
 print("creating test csv....")
 with open('reviews_test.csv', 'w', newline='') as output_file:
     dict_writer = csv.DictWriter(output_file, data[0].keys())
     dict_writer.writeheader()
-    dict_writer.writerows(data[2000000:3000000])
+    dict_writer.writerows(data[1000000:2000000])
 
 print("creating evaluation csv....")
 with open('reviews_eval.csv', 'w', newline='') as output_file:
     dict_writer = csv.DictWriter(output_file, data[0].keys())
     dict_writer.writeheader()
-    dict_writer.writerows(data[3000000:4000000])
+    dict_writer.writerows(data[2000000:2500000])
 
 
 print("done!")
