@@ -53,7 +53,7 @@ class SentimentLSTM(nn.Module):
             lstm_output, _ = self.lstm(embeds.view(len(sentence, 1, -1)))
             sentiment_space = self.hidden_to_sentiment(
                 lstm_output.view(len(sentence), -1))
-            
+
         else:
             dim_reduced = self.dim_reduce(sentence)
             lstm_output, _ = self.lstm(dim_reduced)
@@ -62,3 +62,68 @@ class SentimentLSTM(nn.Module):
         sentiment_probabilities = F.log_softmax(sentiment_space, dim=0)
 
         return sentiment_probabilities
+
+
+class SentimentCNN(nn.Module):
+    """
+    Convolutional neural network model for sentiment classification.
+
+    idea from: https://arxiv.org/pdf/1408.5882v2.pdf
+    """
+
+    def __init__(self, input_size, embedding_dim, output_size, kernel_1_size, kernel_2_size, n_filters, use_embedding=True):
+        super().__init__()
+        self.use_embedding = use_embedding
+        if use_embedding:
+            self.embedding = nn.Embedding(input_size, embedding_dim)
+            self.conv1 = nn.Conv1d(
+                1, n_filters, kernel_size=kernel_1_size)
+            self.conv2 = nn.Conv1d(n_filters, 1,
+                                   kernel_size=kernel_2_size)
+            self.fc = nn.Linear(input_size - n_filters, output_size)
+        else:
+            self.conv1 = nn.Conv1d(1, n_filters, kernel_size=kernel_1_size)
+            self.conv2 = nn.Conv1d(n_filters, 1,
+                                   kernel_size=kernel_2_size)
+            self.fc = nn.Linear(input_size - n_filters, output_size)
+
+    def forward(self, x):
+        if self.use_embedding:
+            embedded = self.embedding(x)
+            first_conv = F.relu(self.conv1(embedded))
+            second_conv = F.relu(self.conv2(first_conv))
+            output = self.fc(second_conv)
+        else:
+            first_conv = F.relu(self.conv1(x))
+            second_conv = F.relu(self.conv2(first_conv))
+            output = self.fc(second_conv)
+        return output
+
+
+class SentimentFC(nn.Module):
+    def __init__(self, input_size, embedding_dim, hidden_1_size, hidden_2_size, hidden_3_size, use_embedding=True):
+        self.use_embedding = use_embedding
+        if use_embedding:
+            self.embedding = nn.Embedding(input_size, hidden_1_size)
+            self.fc1 = nn.Linear(hidden_1_size, hidden_2_size)
+            self.fc2 = nn.Linear(hidden_2_size, hidden_3_size)
+            self.fc3 = nn.linear(hidden_3_size, output_size)
+        else:
+            self.fce = nn.Linear(input_size, hidden_1_size)
+            self.fc1 = nn.Linear(hidden_1_size, hidden_2_size)
+            self.fc2 = nn.Linear(hidden_2_size, hidden_3_size)
+            self.fc3 = nn.linear(hidden_3_size, output_size)
+
+        def forward(self, x):
+            if self.use_embedding:
+                embedded = self.embedding(x)
+                lin1 = F.relu(self.fc1(embedded))
+                lin2 = F.relu(self.fc2(lin1))
+                output = self.fc3(lin2)
+            else:
+                embedded = self.fce(x)
+                lin1 = F.relu(self.fc1(embedded))
+                lin2 = F.relu(self.fc2(lin1))
+                output = self.fc3(lin2)
+
+            return output
