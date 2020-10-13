@@ -32,8 +32,8 @@ class SentimentLSTM(nn.Module):
 
             # setup LSTM layer
             # takes embeddings as input, outputs to the hidden_dim space
-            self.lstm = nn.LSTM(embedding_dim, hidden_dim)
-
+            self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True)
+            
             # final linear layer
             self.hidden_to_sentiment = nn.Linear(hidden_dim, output_size)
         else:
@@ -50,18 +50,17 @@ class SentimentLSTM(nn.Module):
         if self.use_embedding:
             embeds = self.embedding(sentence)
             # toss away RNN state since we're not manipulating it
-            lstm_output, _ = self.lstm(embeds.view(len(sentence, 1, -1)))
-            sentiment_space = self.hidden_to_sentiment(
-                lstm_output.view(len(sentence), -1))
-
+            lstm_output, _ = self.lstm(embeds)
+            sentiment_space = self.hidden_to_sentiment(lstm_output[ : , -1, : ]) # we only care about the last timestep
+            
         else:
             dim_reduced = self.dim_reduce(sentence)
             lstm_output, _ = self.lstm(dim_reduced)
             sentiment_space = self.hidden_to_sentiment(lstm_output)
 
-        sentiment_probabilities = F.log_softmax(sentiment_space, dim=0)
+        
 
-        return sentiment_probabilities
+        return sentiment_space
 
 
 class SentimentCNN(nn.Module):
@@ -69,6 +68,8 @@ class SentimentCNN(nn.Module):
     Convolutional neural network model for sentiment classification.
 
     idea from: https://arxiv.org/pdf/1408.5882v2.pdf
+
+    input_size should be the vocabulary size if you're using embedding
     """
 
     def __init__(self, input_size, embedding_dim, output_size, kernel_1_size, kernel_2_size, n_filters, use_embedding=True):
@@ -80,7 +81,7 @@ class SentimentCNN(nn.Module):
                 1, n_filters, kernel_size=kernel_1_size)
             self.conv2 = nn.Conv1d(n_filters, 1,
                                    kernel_size=kernel_2_size)
-            self.fc = nn.Linear(input_size - n_filters, output_size)
+            self.fc = nn.Linear(embedding_dim - n_filters, output_size)
         else:
             self.conv1 = nn.Conv1d(1, n_filters, kernel_size=kernel_1_size)
             self.conv2 = nn.Conv1d(n_filters, 1,
@@ -90,7 +91,7 @@ class SentimentCNN(nn.Module):
     def forward(self, x):
         if self.use_embedding:
             embedded = self.embedding(x)
-            first_conv = F.relu(self.conv1(embedded))
+            first_conv = F.relu(self.conv1(embedded.permute(0, 2, 1)))
             second_conv = F.relu(self.conv2(first_conv))
             output = self.fc(second_conv)
         else:
@@ -101,18 +102,18 @@ class SentimentCNN(nn.Module):
 
 
 class SentimentFC(nn.Module):
-    def __init__(self, input_size, embedding_dim, hidden_1_size, hidden_2_size, hidden_3_size, use_embedding=True):
+    def __init__(self, input_size, embedding_dim, hidden_1_size, hidden_2_size, hidden_3_size,output_size, use_embedding=True):
         self.use_embedding = use_embedding
         if use_embedding:
             self.embedding = nn.Embedding(input_size, hidden_1_size)
             self.fc1 = nn.Linear(hidden_1_size, hidden_2_size)
             self.fc2 = nn.Linear(hidden_2_size, hidden_3_size)
-            self.fc3 = nn.linear(hidden_3_size, output_size)
+            self.fc3 = nn.Linear(hidden_3_size, output_size)
         else:
             self.fce = nn.Linear(input_size, hidden_1_size)
             self.fc1 = nn.Linear(hidden_1_size, hidden_2_size)
             self.fc2 = nn.Linear(hidden_2_size, hidden_3_size)
-            self.fc3 = nn.linear(hidden_3_size, output_size)
+            self.fc3 = nn.Linear(hidden_3_size, output_size)
 
         def forward(self, x):
             if self.use_embedding:
