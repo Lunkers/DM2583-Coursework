@@ -81,5 +81,5 @@ print("scoring eval")
 print(classifier.score(eval_text, eval_df["Sentiment"]))
 
 plot_confusion_matrix(classifier, eval_text, eval_df["Sentiment"], normalize="true")
-plot_roc_curve(classifier, eval_text, eval_df["Sentiment"])
+# plot_roc_curve(classifier, eval_text, eval_df["Sentiment"])
 plt.show()
